@@ -1,6 +1,7 @@
 /* COMP2215 Task 5---SKELETON */
 
 #include "os.h"
+#include "usart.c"
 
 // Additional colour definitions
 #define C_BLUE 0x3C1E
@@ -16,6 +17,12 @@
 #define LineThickness 2
 #define NoRowColDef 10
 
+#define HIT_MN 120
+#define MISS_MN 121
+#define WIN_MN 122
+
+#define PLAYER 1
+
 enum orientation
 {
 	NORTH,
@@ -26,7 +33,6 @@ enum orientation
 
 enum orientation curOrientation;
 
-int blink(int);
 int update_dial(int);
 int collect_delta(int);
 int check_switches(int);
@@ -46,7 +52,8 @@ int gridTotalHeight;
 int gridStartLeftPos;
 int gridStartTopPos;
 
-int gridArea[NoRowColDef][NoRowColDef] = {
+// 0 for blank, 1 for miss, 2 for hit
+int gridArea[NoRowColDef][NoRwowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 1, 1, 2, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -66,8 +73,7 @@ int8_t encoderPosition = 0;
 void main(void)
 {
 	os_init();
-
-	os_add_task(blink, 30, 1);
+	USART_Init(9600);
 	os_add_task(collect_delta, 500, 1);
 	os_add_task(check_switches, 100, 1);
 
@@ -244,174 +250,171 @@ int collect_delta(int state)
 	return state;
 }
 
+void add_miss(){
+	gridArea[cursorX][cursorY] = 1;
+	reDrawCell(cursorX, cursorY);
+
+}
+
+void add_hit() {
+	gridArea[cursorX][cursorY] = 2;
+	reDrawCell(cursorX, cursorY);
+}
+
+int getHitOrMissOrWon(uint8_t cellIndex) {
+	uint8_t y = cellIndex % 10;
+	uint8_t x = cellIndex  10; 
+}
+
+void show_win(){
+	// draw big red rectange with white text centre of screen
+	// clear screen
+	// play again?
+	clear_screen();
+}
+
 int check_switches(int state)
 {
 
-	if (get_switch_press(_BV(SWN)))
-	{
-		// display_string("North\n");
-		int prevCursorX = cursorX;
-		int prevCursorY = cursorY;
-		cursorY -= 1;
-		if (cursorY < 0)
+		if (get_switch_press(_BV(SWN)))
 		{
-			cursorY = 0;
+			// display_string("North\n");
+			int prevCursorX = cursorX;
+			int prevCursorY = cursorY;
+			cursorY -= 1;
+			if (cursorY < 0)
+			{
+				cursorY = 0;
+			}
+			updateDisplayCoords();
+			reDrawCell(prevCursorX, prevCursorY);
+			reDrawCell(cursorX, cursorY);
 		}
-		updateDisplayCoords();
-		reDrawCell(prevCursorX, prevCursorY);
-		reDrawCell(cursorX, cursorY);
-	}
 
-	if (get_switch_press(_BV(SWE)))
-	{
-		// display_string("East\n");
-		int prevCursorX = cursorX;
-		int prevCursorY = cursorY;
-		cursorX += 1;
-		if (cursorX >= NoRowCols)
+		if (get_switch_press(_BV(SWE)))
 		{
-			cursorX = NoRowCols - 1;
+			// display_string("East\n");
+			int prevCursorX = cursorX;
+			int prevCursorY = cursorY;
+			cursorX += 1;
+			if (cursorX >= NoRowCols)
+			{
+				cursorX = NoRowCols - 1;
+			}
+			updateDisplayCoords();
+			reDrawCell(prevCursorX, prevCursorY);
+			reDrawCell(cursorX, cursorY);
 		}
-		updateDisplayCoords();
-		reDrawCell(prevCursorX, prevCursorY);
-		reDrawCell(cursorX, cursorY);
-	}
 
-	if (get_switch_press(_BV(SWS)))
-	{
-		// display_string("South\n");
-
-		int prevCursorX = cursorX;
-		int prevCursorY = cursorY;
-		cursorY += 1;
-		if (cursorY >= NoRowCols)
+		if (get_switch_press(_BV(SWS)))
 		{
-			cursorY = NoRowCols - 1;
-		}
-		updateDisplayCoords();
-		reDrawCell(prevCursorX, prevCursorY);
-		reDrawCell(cursorX, cursorY);
-	}
+			// display_string("South\n");
 
-	if (get_switch_press(_BV(SWW)))
-	{
-		// display_string("West\n");
-		int prevCursorX = cursorX;
-		int prevCursorY = cursorY;
-		cursorX -= 1;
-		if (cursorX < 0)
+			int prevCursorX = cursorX;
+			int prevCursorY = cursorY;
+			cursorY += 1;
+			if (cursorY >= NoRowCols)
+			{
+				cursorY = NoRowCols - 1;
+			}
+			updateDisplayCoords();
+			reDrawCell(prevCursorX, prevCursorY);
+			reDrawCell(cursorX, cursorY);
+		}
+
+		if (get_switch_press(_BV(SWW)))
 		{
-			cursorX = 0;
+			// display_string("West\n");
+			int prevCursorX = cursorX;
+			int prevCursorY = cursorY;
+			cursorX -= 1;
+			if (cursorX < 0)
+			{
+				cursorX = 0;
+			}
+			updateDisplayCoords();
+			reDrawCell(prevCursorX, prevCursorY);
+			reDrawCell(cursorX, cursorY);
 		}
-		updateDisplayCoords();
-		reDrawCell(prevCursorX, prevCursorY);
-		reDrawCell(cursorX, cursorY);
-	}
 
-	// if (get_switch_long(_BV(SWC)))
-	// {
-	// 	display_string("[L] center");
-	// }
+		// if (get_switch_long(_BV(SWC)))
+		// {
+		// 	display_string("[L] center");
+		// }
 
-	// if (get_switch_short(_BV(SWC)))
-	// {
-	// 	display_string("[S] Centre\n");
-	// }
-
-	// if (get_switch_rpt(_BV(SWN)))
-	// {
-	// 	display_string("[R] North\n");
-	// }
-
-	// if (get_switch_rpt(_BV(SWE)))
-	// {
-	// 	display_string("[R] East\n");
-	// }
-
-	// if (get_switch_rpt(_BV(SWS)))
-	// {
-	// 	display_string("[R] South\n");
-	// }
-
-	// if (get_switch_rpt(_BV(SWW)))
-	// {
-	// 	display_string("[R] West\n");
-	// }
-
-	// if (get_switch_rpt(SWN))
-	// {
-	// 	display_string("[R] North\n");
-	// }
-
-	int8_t tempPos = os_enc_delta();
-	if (tempPos > encoderPosition)
-	{
-		encoderPosition = os_enc_delta();
-		incrementOrientation();
-	}
-	else if (tempPos < encoderPosition)
-	{
-		encoderPosition = os_enc_delta();
-		decrementOrientation();
-	}
-
-	return state;
-}
-
-int blink(int state)
-{
-	static int light = 0;
-	uint8_t level;
-
-	if (light < -120)
-	{
-		state = 1;
-	}
-	else if (light > 254)
-	{
-		state = -20;
-	}
-
-	/* Compensate somewhat for nonlinear LED
-           output and eye sensitivity:
-        */
-	if (state > 0)
-	{
-		if (light > 40)
+		if (get_switch_short(_BV(SWC)))
 		{
-			state = 2;
-		}
-		if (light > 100)
-		{
-			state = 5;
-		}
-	}
-	else
-	{
-		if (light < 180)
-		{
-			state = -10;
-		}
-		if (light < 30)
-		{
-			state = -5;
-		}
-	}
-	light += state;
+			if (PLAYER == 0){
+				USART_Transmit(cursorX + (10 * cursorY));
+				uint8_t res = USART_Wait_And_Receive();
+				if (res == HIT_MN){
+					addHit(res);
+				} else if (res == MISS_MN){
+					addMiss(res);
+				} else if (res == WIN_MN){
+					showWin();
+				} else {
+					// Something went wrong with communication :/
+				}
+				
+				uint8_t res = USART_Wait_And_Receive();
+				// Reply whether hit or miss or won
+				USART_Transmit(getHitOrMissOrWon(res));
+			} else {				
+				uint8_t res = USART_Wait_And_Receive();
+				// Reply whether hit or miss or won
+				USART_Transmit(getHitOrMissOrWon(res));
 
-	if (light < 0)
-	{
-		level = 0;
-	}
-	else if (light > 255)
-	{
-		level = 255;
-	}
-	else
-	{
-		level = light;
-	}
+				USART_Transmit(cursorX + (10 * cursorY));
+				uint8_t res = USART_Wait_And_Receive();
+				if (res == HIT_MN){
+					addHit(res);
+				} else if (res == MISS_MN){
+					addMiss(res);
+				} else if (res == WIN_MN){
+					showWin();
+				} else {
+					// Something went wrong with communication :/
+				}
+			}
+		}
 
-	os_led_brightness(level);
+		// if (get_switch_rpt(_BV(SWN)))
+		// {
+		// 	display_string("[R] North\n");
+		// }
+
+		// if (get_switch_rpt(_BV(SWE)))
+		// {
+		// 	display_string("[R] East\n");
+		// }
+
+		// if (get_switch_rpt(_BV(SWS)))
+		// {
+		// 	display_string("[R] South\n");
+		// }
+
+		// if (get_switch_rpt(_BV(SWW)))
+		// {
+		// 	display_string("[R] West\n");
+		// }
+
+		// if (get_switch_rpt(SWN))
+		// {
+		// 	display_string("[R] North\n");
+		// }
+
+		int8_t tempPos = os_enc_delta();
+		if (tempPos > encoderPosition)
+		{
+			encoderPosition = os_enc_delta();
+			incrementOrientation();
+		}
+		else if (tempPos < encoderPosition)
+		{
+			encoderPosition = os_enc_delta();
+			decrementOrientation();
+		}
+	
 	return state;
 }

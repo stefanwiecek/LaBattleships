@@ -71,16 +71,16 @@
 
 
 
-// // int isGameFinished(uint8_t *p1, uint8_t *p2) {
-// //     // iterate through board; if either board does not have any ship tiles left (i.e. value 1), return true
-// //     for (int i = 0, len = sizeof p1/sizeof p1[0]; i < len; i++) {
-// //         if (p1[i] == 1 || p2[i] == 1) {
-// //             return 0;
-// //         }
-// //     }
-// //     // no ship tiles left, return 1
-// //     return 1;
-// // }
+int isGameFinished(uint8_t *p1, uint8_t *p2) {
+    // iterate through board; if either board does not have any ship tiles left (i.e. value 1), return true
+    for (int i = 0, len = sizeof p1/sizeof p1[0]; i < len; i++) {
+        if (p1[i] == 1 || p2[i] == 1) {
+            return 0;
+        }
+    }
+    // no ship tiles left, return 1
+    return 1;
+}
 
 // void USART_Init( unsigned int baud ){
 //     /* Set baud rate */
