@@ -9,6 +9,7 @@ Developed by
 #include "os.h"
 #include "usart.h"
 #include <math.h>
+#include <string.h>
 
 // Additional colour definitions
 #define C_BLUE 0x3C1E
@@ -58,8 +59,8 @@ void show_win();
 
 int position = 0;
 
-const int cellHeight = (LCDWIDTH - 10) / NoRowColDef;
-const int cellWidth = (LCDWIDTH - 10) / NoRowColDef;
+const int cellHeight = (LCDWIDTH - 50) / NoRowColDef;
+const int cellWidth = (LCDWIDTH - 50) / NoRowColDef;
 const int NoRowCols = 10;
 int gridTotalWidth;
 int gridTotalHeight;
@@ -100,6 +101,9 @@ int cursorY = 0;
 
 int8_t encoderPosition = 0;
 
+char* prevMsgTop = "";
+char* prevMsgBottom = "";
+
 void main(void)
 {
 	os_init();
@@ -115,7 +119,7 @@ void init()
 	gridTotalWidth = cellWidth * NoRowColDef;
 	gridTotalHeight = cellHeight * NoRowColDef;
 	gridStartLeftPos = (LCDHEIGHT - gridTotalWidth) / 2;
-	gridStartTopPos = (LCDWIDTH - gridTotalWidth) / 2;
+	gridStartTopPos = (LCDWIDTH - gridTotalWidth);
 
 	initializeGrid();
 	
@@ -128,6 +132,24 @@ void init()
 	sei();
 	for (;;)
 	{
+	}
+}
+
+void displayMessageTop(char* msg){
+	if (strcmp(prevMsgTop, msg) != 0){
+		rectangle r = {gridStartLeftPos, gridStartLeftPos + gridTotalWidth, 0, gridStartTopPos};
+		drawFilledRectangle(r, BLACK, BLACK);
+		display_string_xy(msg , gridStartLeftPos, gridStartTopPos /2);
+		prevMsg = msg;
+	}
+}
+
+void displayMessageBottom(char* msg){
+	if (strcmp(prevMsgBottom, msg) != 0){
+		rectangle r = {gridStartLeftPos, gridStartLeftPos + gridTotalWidth, 0, gridStartTopPos};
+		drawFilledRectangle(r, BLACK, BLACK);
+		display_string_xy(msg , gridStartLeftPos, gridStartTopPos /2);
+		prevMsg = msg;
 	}
 }
 
@@ -349,11 +371,13 @@ void show_win(){
 	// play again?
 	
 	clear_screen();
+	displayMessage("You won");
 }
 
 int check_switches(int state)
 {
 	if (curPlayer == 0){
+		displayMessage("It is your turn!");
 		LED_OFF;
 
 		// Selecting a square and sending command
@@ -494,6 +518,7 @@ int check_switches(int state)
 	} else {
 		// Waiting to recieve a square from the other player
 		LED_ON;		
+		displayMessage("Waiting for other player...");
 		uint8_t res = USART_Wait_And_Receive();
 		int waitForMsg = 1;
 		while (waitForMsg){
