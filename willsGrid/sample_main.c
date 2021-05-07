@@ -13,11 +13,12 @@ Developed by
 
 // Additional colour definitions
 #define C_BLUE 0x3C1E
+#define C_LIGHT_GREY  0xD69A 
 
 // Colours
 #define GridLineColor C_BLUE
 #define BackgroundColor WHITE
-#define MissColor LIGHT_GREY
+#define MissColor C_LIGHT_GREY
 #define DestroyedColor RED
 #define CursorColour MAGENTA
 
@@ -29,7 +30,7 @@ Developed by
 #define MISS_MN 121
 #define WIN_MN 122
 
-#define PLAYER 1
+#define PLAYER 0
 
 int curPlayer = PLAYER;
 
@@ -71,15 +72,15 @@ int gridStartTopPos;
 // 0 for blank, 1 for boat, 2 for hit
 int player1Grid[NoRowColDef][NoRowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0, 1, 1, 1, 0},
+	{0, 0, 0, 0, 0, 0, 1, 1, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 1, 0, 0, 1, 0, 0},
-	{0, 0, 0, 0, 1, 0, 0, 1, 0, 0},
-	{0, 0, 0, 0, 1, 0, 0, 1, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
 
 // This is the other players grid which gets displayed on your laFortuna
@@ -107,6 +108,9 @@ char* prevMsgBottom = "";
 void main(void)
 {
 	os_init();
+	// Splash screen here
+
+
 	USART_Init(9600);
 	os_add_task(collect_delta, 500, 1);
 	os_add_task(check_switches, 100, 1);
@@ -355,7 +359,11 @@ int getHitOrMissOrWon(uint8_t cellIndex) {
 		}
 	}
 	
-	if (won == 1) return WIN_MN;
+	if (won == 1) {
+		clear_screen();
+		displayMessageTop("You lost");
+		return WIN_MN;
+	}
 	if (player1Grid[y][x] == 1) return HIT_MN; 
 	if (player1Grid[y][x] == 0) return MISS_MN;
 	return MISS_MN;
@@ -517,7 +525,7 @@ int check_switches(int state)
 			decrementOrientation();
 		}
 			
-	} else {
+	} else if (curPlayer == 1) {
 		// Waiting to recieve a square from the other player
 		LED_ON;		
 		displayMessageTop("Waiting for other player...");
@@ -530,8 +538,13 @@ int check_switches(int state)
 				// display_string("Other player sent position");
 				USART_Transmit(val);
 				// display_string("Sending back HIT");
-				curPlayer = 0;
+				if (val == WIN_MN){
+					curPlayer = 2;
+				} else {
+					curPlayer = 0;
+				}
 				waitForMsg = 0;
+
 			}
 		}
 
