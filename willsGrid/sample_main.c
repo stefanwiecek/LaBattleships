@@ -17,7 +17,7 @@ Developed by
 // Colours
 #define GridLineColor C_BLUE
 #define BackgroundColor WHITE
-#define MissColor GREY
+#define MissColor LIGHT_GREY
 #define DestroyedColor RED
 #define CursorColour MAGENTA
 
