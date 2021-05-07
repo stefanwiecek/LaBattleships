@@ -67,7 +67,7 @@ int gridStartLeftPos;
 int gridStartTopPos;
 
 // This is your starting grid - you wont see this
-// 0 for blank, 
+// 0 for blank, 1 for boat, 2 for hit
 int player1Grid[NoRowColDef][NoRowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 1, 1, 1, 0},
@@ -293,6 +293,18 @@ int collect_delta(int state)
 	return state;
 }
 
+uint8_t indexToX(uint8_t cellIndex){
+	return cellIndex % NoRowColDef;
+}
+
+uint8_t indexToY(uint8_t cellIndex){
+	return (uint8_t) floor( (double) cellIndex / (double) NoRowColDef);
+}
+
+uint8_t coordsToIndex(uint8_t x, uint8_t y) {
+	return x + (y * NoRowColDef);
+}
+
 void add_miss(uint8_t res){
 	player2Grid[cursorY][cursorX] = 1;
 	reDrawCell(cursorX, cursorY);
@@ -305,9 +317,29 @@ void add_hit(uint8_t res) {
 }
 
 int getHitOrMissOrWon(uint8_t cellIndex) {
-	uint8_t x = cellIndex % 10; 
-	uint8_t y = (uint8_t) floor( (double) cellIndex / (double) 10);
-	return HIT_MN;
+	uint8_t x = indexToX(cellIndex);
+	uint8_t y = indexToY(cellIndex);
+
+	int won = 1;
+	int i,j;
+	for (i = 0; i < NoRowCols; i++)
+	{
+		for (j = 0; j < NoRowCols; j++)
+		{
+			if (player1Grid[j][i] == 1){
+				won= 0;
+				break;
+			}
+		}
+	}
+	
+	if (won == 1) return WIN_MN;
+	if (player1Grid[y][x] == 1) return HIT_MN; 
+	if (player1Grid[y][x] == 2) return MISS_MN;
+}
+
+uint8_t getValueAtCoords(uint8_t x, uint8_t y) {
+	return player2Grid[y][x];
 }
 
 void show_win(){
@@ -465,8 +497,9 @@ int check_switches(int state)
 		int waitForMsg = 1;
 		while (waitForMsg){
 			if (res <= 99){
+				player1Grid[indexToY(res)][indexToX(res)] = 2;
 				// display_string("Other player sent position");
-				USART_Transmit(HIT_MN);
+				USART_Transmit(getHitOrMissOrWon(res));
 				// display_string("Sending back HIT");
 				curPlayer = 0;
 				waitForMsg = 0;
