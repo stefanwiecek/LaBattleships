@@ -30,7 +30,7 @@ Developed by
 #define MISS_MN 121
 #define WIN_MN 122
 
-#define PLAYER 0
+#define PLAYER 1
 
 int curPlayer = PLAYER;
 
@@ -524,10 +524,10 @@ int check_switches(int state)
 			encoderPosition = os_enc_delta();
 			decrementOrientation();
 		}
-			
+
 	} else if (curPlayer == 1) {
 		// Waiting to recieve a square from the other player
-		LED_ON;		
+		LED_ON;	
 		displayMessageTop("Waiting for other player...");
 		uint8_t res = USART_Wait_And_Receive();
 		int waitForMsg = 1;
