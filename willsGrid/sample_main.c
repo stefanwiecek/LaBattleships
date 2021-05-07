@@ -28,7 +28,7 @@ Developed by
 #define MISS_MN 121
 #define WIN_MN 122
 
-#define PLAYER 1
+#define PLAYER 0
 
 int curPlayer = PLAYER;
 
@@ -335,7 +335,8 @@ int getHitOrMissOrWon(uint8_t cellIndex) {
 	
 	if (won == 1) return WIN_MN;
 	if (player1Grid[y][x] == 1) return HIT_MN; 
-	if (player1Grid[y][x] == 2) return MISS_MN;
+	if (player1Grid[y][x] == 0) return MISS_MN;
+	return MISS_MN;
 }
 
 uint8_t getValueAtCoords(uint8_t x, uint8_t y) {
@@ -497,9 +498,10 @@ int check_switches(int state)
 		int waitForMsg = 1;
 		while (waitForMsg){
 			if (res <= 99){
+				int val = getHitOrMissOrWon(res);
 				player1Grid[indexToY(res)][indexToX(res)] = 2;
 				// display_string("Other player sent position");
-				USART_Transmit(getHitOrMissOrWon(res));
+				USART_Transmit(val);
 				// display_string("Sending back HIT");
 				curPlayer = 0;
 				waitForMsg = 0;
