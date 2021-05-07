@@ -1,4 +1,4 @@
-/**
+ /**
  * Library for UART communication between LaFortuna devices
  * 
  * COMP2215 
@@ -8,15 +8,32 @@
  * made with <3 for kpz
  */
 
+#include "os.h"
+
+void USART_Init( unsigned int baud);
+void USART_Transmit( unsigned int data );
+unsigned char USART_Receive( void );
+unsigned int USART_Wait_And_Receive( void );
+
+
+
 
 void USART_Init( unsigned int baud ){
     /* Set baud rate */
     //UBRRH = (unsigned char)(baud>>8);
-    UBRR1 = (unsigned char)baud;
+    // UBRR1 = (unsigned char)baud;
+
+    UBRR1H = (F_CPU/(baud*16L)-1) >> 8;
+	UBRR1L = (F_CPU/(baud*16L)-1);
+
+
     /* Enable receiver and transmitter */
     UCSR1B = (1<<RXEN1)|(1<<TXEN1);
     /* Set frame format: 8data, 2stop bit */
     UCSR1C = (1<<USBS1)|(3<<UCSZ10);
+
+    // UDR1 = 0x00;
+    
     }
 
 void USART_Transmit( unsigned int data )

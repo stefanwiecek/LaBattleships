@@ -1,7 +1,14 @@
-/* COMP2215 Task 5---SKELETON */
+/*
+LaBattleships
+
+Developed by 
+- Will Kelly - wdk1g19
+- Stefan Wiecek- saw1g19
+*/
 
 #include "os.h"
-#include "usart.c"
+#include "usart.h"
+#include <math.h>
 
 // Additional colour definitions
 #define C_BLUE 0x3C1E
@@ -9,9 +16,9 @@
 // Colours
 #define GridLineColor C_BLUE
 #define BackgroundColor WHITE
-#define BoatColor GREEN
+#define MissColor GREEN
 #define DestroyedColor RED
-#define CursorColour YELLOW
+#define CursorColour MAGENTA
 
 // Drawing info
 #define LineThickness 2
@@ -22,6 +29,8 @@
 #define WIN_MN 122
 
 #define PLAYER 1
+
+int curPlayer = PLAYER;
 
 enum orientation
 {
@@ -41,6 +50,11 @@ void initializeGrid();
 void updateDisplayCoords();
 void drawFilledRectangle(rectangle r, uint16_t fillCol, uint16_t lineCol);
 void init();
+void add_miss(uint8_t res);
+void add_hit(uint8_t res);
+int getHitOrMissOrWon(uint8_t cellIndex);
+void show_win();
+
 
 int position = 0;
 
@@ -52,18 +66,34 @@ int gridTotalHeight;
 int gridStartLeftPos;
 int gridStartTopPos;
 
-// 0 for blank, 1 for miss, 2 for hit
-int gridArea[NoRowColDef][NoRwowColDef] = {
+// This is your starting grid - you wont see this
+// 0 for blank, 
+int player1Grid[NoRowColDef][NoRowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0, 1, 1, 2, 0},
+	{0, 0, 0, 0, 0, 0, 1, 1, 1, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 1, 0, 0, 2, 0, 0},
-	{0, 0, 0, 0, 1, 0, 0, 2, 0, 0},
-	{0, 0, 0, 0, 1, 0, 0, 2, 0, 0},
+	{0, 0, 0, 0, 1, 0, 0, 1, 0, 0},
+	{0, 0, 0, 0, 1, 0, 0, 1, 0, 0},
+	{0, 0, 0, 0, 1, 0, 0, 1, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
+
+// This is the other players grid which gets displayed on your laFortuna
+// 0 for blank, 1 for ship not hit, 2 for ship hit
+int player2Grid[NoRowColDef][NoRowColDef] = {
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
 int cursorX = 0;
 int cursorY = 0;
@@ -88,6 +118,12 @@ void init()
 	gridStartTopPos = (LCDWIDTH - gridTotalWidth) / 2;
 
 	initializeGrid();
+	
+	if (PLAYER == 0){
+		display_string_xy("Play 0" , 5,35);
+	} else {
+		display_string_xy("Play 1" , 5, 35);
+	}
 
 	sei();
 	for (;;)
@@ -180,26 +216,27 @@ void initializeGrid()
 		for (j = 0; j < NoRowCols; j++)
 		{
 			rectangle r = {left, right, top, bottom};
+			uint16_t outline = GridLineColor;
 			if (i == cursorX && j == cursorY)
 			{
-				drawFilledRectangle(r, CursorColour, CursorColour);
+				// drawFilledRectangle(r, CursorColour, CursorColour);
+				outline = CursorColour;
 			}
-			else
+			
+			// 0 for blank, 1 for ship not hit, 2 for ship hit
+			if (player2Grid[j][i] == 0)
 			{
-
-				if (gridArea[j][i] == 0)
-				{
-					drawFilledRectangle(r, BackgroundColor, GridLineColor);
-				}
-				else if (gridArea[j][i] == 1)
-				{
-					drawFilledRectangle(r, BoatColor, GridLineColor);
-				}
-				else
-				{
-					drawFilledRectangle(r, DestroyedColor, GridLineColor);
-				}
+				drawFilledRectangle(r, BackgroundColor, outline);
 			}
+			else if (player2Grid[j][i] == 1)
+			{
+				drawFilledRectangle(r, MissColor, outline);
+			}
+			else if (player2Grid[j][i] == 2)
+			{
+				drawFilledRectangle(r, DestroyedColor, outline);
+			} 
+			
 			top += cellHeight;
 			bottom += cellHeight;
 		}
@@ -215,26 +252,32 @@ void reDrawCell(int x, int y)
 	int top = gridStartTopPos + (y * cellHeight);
 	int bottom = gridStartTopPos + (y * cellHeight) + cellHeight;
 	rectangle r = {left, right, top, bottom};
+
+
+ 	uint16_t outline = GridLineColor;
+	
+
 	if (x == cursorX && y == cursorY)
 	{
-		drawFilledRectangle(r, CursorColour, CursorColour);
+		// drawFilledRectangle(r, CursorColour, CursorColour);
+		outline = CursorColour;
 	}
-	else
+	
+	// 0 for blank, 1 for ship not hit, 2 for ship hit
+	if (player2Grid[y][x] == 0)
 	{
-
-		if (gridArea[y][x] == 0)
-		{
-			drawFilledRectangle(r, BackgroundColor, GridLineColor);
-		}
-		else if (gridArea[y][x] == 1)
-		{
-			drawFilledRectangle(r, BoatColor, GridLineColor);
-		}
-		else
-		{
-			drawFilledRectangle(r, DestroyedColor, GridLineColor);
-		}
+		drawFilledRectangle(r, BackgroundColor, outline);
 	}
+	else if (player2Grid[y][x] == 1)
+	{
+		drawFilledRectangle(r, MissColor, outline);
+	}
+	else if (player2Grid[y][x] == 2)
+	{
+		drawFilledRectangle(r, DestroyedColor, outline);
+	} 
+		
+	
 }
 
 void drawFilledRectangle(rectangle r, uint16_t fillCol, uint16_t lineCol)
@@ -250,32 +293,37 @@ int collect_delta(int state)
 	return state;
 }
 
-void add_miss(){
-	gridArea[cursorX][cursorY] = 1;
+void add_miss(uint8_t res){
+	player2Grid[cursorY][cursorX] = 1;
 	reDrawCell(cursorX, cursorY);
 
 }
 
-void add_hit() {
-	gridArea[cursorX][cursorY] = 2;
+void add_hit(uint8_t res) {
+	player2Grid[cursorY][cursorX] = 2;
 	reDrawCell(cursorX, cursorY);
 }
 
 int getHitOrMissOrWon(uint8_t cellIndex) {
-	uint8_t y = cellIndex % 10;
-	uint8_t x = cellIndex  10; 
+	uint8_t x = cellIndex % 10; 
+	uint8_t y = (uint8_t) floor( (double) cellIndex / (double) 10);
+	return HIT_MN;
 }
 
 void show_win(){
 	// draw big red rectange with white text centre of screen
 	// clear screen
 	// play again?
+	
 	clear_screen();
 }
 
 int check_switches(int state)
 {
+	if (curPlayer == 0){
+		LED_OFF;
 
+		// Selecting a square and sending command
 		if (get_switch_press(_BV(SWN)))
 		{
 			// display_string("North\n");
@@ -337,46 +385,40 @@ int check_switches(int state)
 			reDrawCell(cursorX, cursorY);
 		}
 
-		// if (get_switch_long(_BV(SWC)))
+		// if (get_switch_long(v_BV(SWC)))
 		// {
 		// 	display_string("[L] center");
 		// }
 
 		if (get_switch_short(_BV(SWC)))
 		{
-			if (PLAYER == 0){
-				USART_Transmit(cursorX + (10 * cursorY));
-				uint8_t res = USART_Wait_And_Receive();
-				if (res == HIT_MN){
-					addHit(res);
-				} else if (res == MISS_MN){
-					addMiss(res);
-				} else if (res == WIN_MN){
-					showWin();
-				} else {
-					// Something went wrong with communication :/
-				}
-				
-				uint8_t res = USART_Wait_And_Receive();
-				// Reply whether hit or miss or won
-				USART_Transmit(getHitOrMissOrWon(res));
-			} else {				
-				uint8_t res = USART_Wait_And_Receive();
-				// Reply whether hit or miss or won
-				USART_Transmit(getHitOrMissOrWon(res));
+			USART_Transmit(cursorX + (10 * cursorY));
+			// display_string("Sent chosen position");
 
-				USART_Transmit(cursorX + (10 * cursorY));
+			int waitForMsg = 1;
+			while (waitForMsg){
 				uint8_t res = USART_Wait_And_Receive();
+
 				if (res == HIT_MN){
-					addHit(res);
+					// display_string("Got a hit message");
+					// display_string("GOT HIT");
+					add_hit(res);
+					curPlayer = 1;
+					waitForMsg = 0;
 				} else if (res == MISS_MN){
-					addMiss(res);
+					// display_string("Got a miss message");
+					// display_string("GOT MISS");
+					add_miss(res);
+					curPlayer = 1;
+					waitForMsg = 0;
 				} else if (res == WIN_MN){
-					showWin();
+					show_win();
 				} else {
+					// display_string("Got a dead message");
 					// Something went wrong with communication :/
 				}
 			}
+			
 		}
 
 		// if (get_switch_rpt(_BV(SWN)))
@@ -415,6 +457,23 @@ int check_switches(int state)
 			encoderPosition = os_enc_delta();
 			decrementOrientation();
 		}
-	
+			
+	} else {
+		// Waiting to recieve a square from the other player
+		LED_ON;		
+		uint8_t res = USART_Wait_And_Receive();
+		int waitForMsg = 1;
+		while (waitForMsg){
+			if (res <= 99){
+				// display_string("Other player sent position");
+				USART_Transmit(HIT_MN);
+				// display_string("Sending back HIT");
+				curPlayer = 0;
+				waitForMsg = 0;
+			}
+		}
+
+		// Reply whether hit or miss or won
+	}
 	return state;
 }
