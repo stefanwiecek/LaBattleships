@@ -17,7 +17,7 @@ Developed by
 // Colours
 #define GridLineColor C_BLUE
 #define BackgroundColor WHITE
-#define MissColor GREEN
+#define MissColor GREY
 #define DestroyedColor RED
 #define CursorColour MAGENTA
 
@@ -29,7 +29,7 @@ Developed by
 #define MISS_MN 121
 #define WIN_MN 122
 
-#define PLAYER 0
+#define PLAYER 1
 
 int curPlayer = PLAYER;
 
@@ -137,19 +137,19 @@ void init()
 
 void displayMessageTop(char* msg){
 	if (strcmp(prevMsgTop, msg) != 0){
-		rectangle r = {gridStartLeftPos, gridStartLeftPos + gridTotalWidth, 0, gridStartTopPos};
+		rectangle r = {gridStartLeftPos, gridStartLeftPos + gridTotalWidth, 0, gridStartTopPos/2};
 		drawFilledRectangle(r, BLACK, BLACK);
-		display_string_xy(msg , gridStartLeftPos, gridStartTopPos /2);
-		prevMsg = msg;
+		display_string_xy(msg , gridStartLeftPos, gridStartTopPos /4);
+		prevMsgTop = msg;
 	}
 }
 
 void displayMessageBottom(char* msg){
 	if (strcmp(prevMsgBottom, msg) != 0){
-		rectangle r = {gridStartLeftPos, gridStartLeftPos + gridTotalWidth, 0, gridStartTopPos};
+		rectangle r = {gridStartLeftPos, gridStartLeftPos + gridTotalWidth, gridStartTopPos/2, gridStartTopPos};
 		drawFilledRectangle(r, BLACK, BLACK);
-		display_string_xy(msg , gridStartLeftPos, gridStartTopPos /2);
-		prevMsg = msg;
+		display_string_xy(msg , gridStartLeftPos, (gridStartTopPos /4)*3);
+		prevMsgBottom = msg;
 	}
 }
 
@@ -371,13 +371,13 @@ void show_win(){
 	// play again?
 	
 	clear_screen();
-	displayMessage("You won");
+	displayMessageTop("You won");
 }
 
 int check_switches(int state)
 {
 	if (curPlayer == 0){
-		displayMessage("It is your turn!");
+		displayMessageTop("It is your turn!");
 		LED_OFF;
 
 		// Selecting a square and sending command
@@ -459,12 +459,14 @@ int check_switches(int state)
 				if (res == HIT_MN){
 					// display_string("Got a hit message");
 					// display_string("GOT HIT");
+					displayMessageBottom("Got hit!");
 					add_hit(res);
 					curPlayer = 1;
 					waitForMsg = 0;
 				} else if (res == MISS_MN){
 					// display_string("Got a miss message");
 					// display_string("GOT MISS");
+					displayMessageBottom("Got miss!");
 					add_miss(res);
 					curPlayer = 1;
 					waitForMsg = 0;
@@ -518,7 +520,7 @@ int check_switches(int state)
 	} else {
 		// Waiting to recieve a square from the other player
 		LED_ON;		
-		displayMessage("Waiting for other player...");
+		displayMessageTop("Waiting for other player...");
 		uint8_t res = USART_Wait_And_Receive();
 		int waitForMsg = 1;
 		while (waitForMsg){
