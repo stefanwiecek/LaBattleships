@@ -20,7 +20,7 @@ If you are on linux you may have to use sudo.
 
 ## Wiring
 
-The devices need to communicate and they do so via USART. To connect them you will need to connect the following pins as written on the back of the device:
+The devices need to communicate and they do so via [USART](https://en.wikipedia.org/wiki/Universal_synchronous_and_asynchronous_receiver-transmitter). To connect them you will need to connect the following pins as written on the back of the device:
 
 | Device 1 | Device 2 |
 | -------- | -------- |
