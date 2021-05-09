@@ -233,6 +233,7 @@ void drawBoat(int boat)
 
 void decrementOrientation()
 {
+
 	if (curOrientation == NORTH && curShipPosX - boats[curPlacingShip].length + 1 >= 0)
 	{
 		curOrientation = WEST;
@@ -249,7 +250,7 @@ void decrementOrientation()
 	{
 		curOrientation = SOUTH;
 	}
-	updateDisplayCoords();
+	updateDisplayCoords(curShipPosX, curShipPosY);
 }
 
 void incrementOrientation()
@@ -270,13 +271,13 @@ void incrementOrientation()
 	{
 		curOrientation = NORTH;
 	}
-	updateDisplayCoords();
+	updateDisplayCoords(curShipPosX, curShipPosY);
 }
 
-void updateDisplayCoords()
+void updateDisplayCoords(int x, int y)
 {
 	char xValue[10];
-	sprintf(xValue, "(%d,%d)", cursorX, cursorY);
+	sprintf(xValue, "(%d,%d)", x, y);
 	display_string_xy(xValue, 5, 5);
 
 	if (curOrientation == NORTH)
@@ -286,24 +287,24 @@ void updateDisplayCoords()
 	else if (curOrientation == EAST)
 	{
 
-		display_string_xy("East", 5, 20);
+		display_string_xy("East ", 5, 20);
 	}
 	else if (curOrientation == SOUTH)
 	{
 
-		display_string_xy("South", 5, 20);
+		display_string_xy("South ", 5, 20);
 	}
 	else if (curOrientation == WEST)
 	{
 
-		display_string_xy("West", 5, 20);
+		display_string_xy("West ", 5, 20);
 	}
 }
 
 void initializePlacingGrid(int grid[NoRowColDef][NoRowColDef])
 {
 	clear_screen();
-	updateDisplayCoords();
+	updateDisplayCoords(curShipPosX, curShipPosY);
 	int left = gridStartLeftPos;
 	int right = gridStartLeftPos + cellWidth;
 	int top = gridStartTopPos;
@@ -343,7 +344,7 @@ void initializePlacingGrid(int grid[NoRowColDef][NoRowColDef])
 void initializeGrid(int grid[NoRowColDef][NoRowColDef])
 {
 	clear_screen();
-	updateDisplayCoords();
+	updateDisplayCoords(cursorX, cursorY);
 	int left = gridStartLeftPos;
 	int right = gridStartLeftPos + cellWidth;
 	int top = gridStartTopPos;
@@ -529,7 +530,7 @@ int gameSwitchCheck(int state)
 			{
 				cursorY = 0;
 			}
-			updateDisplayCoords();
+			updateDisplayCoords(cursorX, cursorY);
 			reDrawCell(prevCursorX, prevCursorY);
 			reDrawCell(cursorX, cursorY);
 		}
@@ -544,7 +545,7 @@ int gameSwitchCheck(int state)
 			{
 				cursorX = NoRowCols - 1;
 			}
-			updateDisplayCoords();
+			updateDisplayCoords(cursorX, cursorY);
 			reDrawCell(prevCursorX, prevCursorY);
 			reDrawCell(cursorX, cursorY);
 		}
@@ -560,7 +561,7 @@ int gameSwitchCheck(int state)
 			{
 				cursorY = NoRowCols - 1;
 			}
-			updateDisplayCoords();
+			updateDisplayCoords(cursorX, cursorY);
 			reDrawCell(prevCursorX, prevCursorY);
 			reDrawCell(cursorX, cursorY);
 		}
@@ -575,7 +576,7 @@ int gameSwitchCheck(int state)
 			{
 				cursorX = 0;
 			}
-			updateDisplayCoords();
+			updateDisplayCoords(cursorX, cursorY);
 			reDrawCell(prevCursorX, prevCursorY);
 			reDrawCell(cursorX, cursorY);
 		}
@@ -699,6 +700,7 @@ int placementSwitchCheck(int state)
 			curShipPosY--;
 			drawBoat(curPlacingShip);
 		}
+		updateDisplayCoords(curShipPosX, curShipPosY);
 	}
 
 	if (get_switch_press(_BV(SWE)))
@@ -715,6 +717,7 @@ int placementSwitchCheck(int state)
 			curShipPosX++;
 			drawBoat(curPlacingShip);
 		}
+		updateDisplayCoords(curShipPosX, curShipPosY);
 	}
 
 	if (get_switch_press(_BV(SWS)))
@@ -731,6 +734,7 @@ int placementSwitchCheck(int state)
 			curShipPosY++;
 			drawBoat(curPlacingShip);
 		}
+		updateDisplayCoords(curShipPosX, curShipPosY);
 	}
 
 	if (get_switch_press(_BV(SWW)))
@@ -747,6 +751,7 @@ int placementSwitchCheck(int state)
 			curShipPosX--;
 			drawBoat(curPlacingShip);
 		}
+		updateDisplayCoords(curShipPosX, curShipPosY);
 	}
 
 	if (get_switch_press(_BV(SWC)))
@@ -773,15 +778,25 @@ int placementSwitchCheck(int state)
 	{
 		encoderPosition = os_enc_delta();
 		clearBoat(curPlacingShip);
+		orientation prevOrientation = curOrientation;
 		incrementOrientation();
 		drawBoat(curPlacingShip);
+		if (prevOrientation == curOrientation)
+		{
+			displayMessageTop("Can't place boat there");
+		}
 	}
 	else if (tempPos < encoderPosition)
 	{
 		encoderPosition = os_enc_delta();
 		clearBoat(curPlacingShip);
+		orientation prevOrientation = curOrientation;
 		decrementOrientation();
 		drawBoat(curPlacingShip);
+		if (prevOrientation == curOrientation)
+		{
+			displayMessageTop("Can't place boat there");
+		}
 	}
 
 	return state;
