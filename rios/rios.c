@@ -147,7 +147,7 @@ int os_add_task(int (*fnc)(int), uint32_t period_ms, int initState)
 }
 
 // CUSTOM FUNC
-os_remove_task(int task)
+void os_remove_task(int task)
 {
    cli();
    if (task < tasksNum - 1)

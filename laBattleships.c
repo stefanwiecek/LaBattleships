@@ -95,6 +95,8 @@ void initShipPlacement()
 {
 	clear_screen();
 
+	os_led_brightness(255);
+
 	initializePlacingGrid(player1Grid);
 	drawBoat(0);
 	placementSwitchTask = os_add_task(placementSwitchCheck, 100, 1);
@@ -103,7 +105,7 @@ void initShipPlacement()
 void initGame()
 {
 	os_remove_task(placementSwitchTask);
-
+	os_led_brightness(0);
 	clear_screen();
 
 	display_string_xy("Get ready!", (LCDHEIGHT / 2) - (11 * 5) / 2, (LCDWIDTH / 2) - 10.5); // Splash screen
@@ -517,8 +519,8 @@ int gameSwitchCheck(int state)
 	if (curPlayer == 0)
 	{
 		displayMessageTop("It is your turn!");
-		LED_OFF;
-
+		// LED_OFF;
+		os_led_brightness(255);
 		// Selecting a square and sending command
 		if (get_switch_press(_BV(SWN)))
 		{
@@ -654,7 +656,8 @@ int gameSwitchCheck(int state)
 	else if (curPlayer == 1)
 	{
 		// Waiting to recieve a square from the other player
-		LED_ON;
+		// LED_ON;
+		os_led_brightness(0);
 		displayMessageTop("Waiting for other player...");
 		uint8_t res = USART_Wait_And_Receive();
 		int waitForMsg = 1;
