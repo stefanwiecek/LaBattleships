@@ -62,7 +62,7 @@ int gameSwitchTask;
 int curShipPosX = 0;
 int curShipPosY = 0;
 int curPlacingShip = 0;
-
+int shipPlacementError = 0;
 void main(void)
 {
 	os_init();
@@ -103,6 +103,20 @@ void initShipPlacement()
 void initGame()
 {
 	os_remove_task(placementSwitchTask);
+
+	clear_screen();
+
+	display_string_xy("Get ready!", (LCDHEIGHT / 2) - (11 * 5) / 2, (LCDWIDTH / 2) - 10.5); // Splash screen
+	if (PLAYER == 0)
+	{
+		display_string_xy("Player 0", (LCDHEIGHT / 2) - (9 * 5) / 2, (LCDWIDTH / 2) + 2.5); // Splash screen
+	}
+	else
+	{
+		display_string_xy("Player 1", (LCDHEIGHT / 2) - (9 * 5) / 2, (LCDWIDTH / 2) + 2.5); // Splash screen
+	}
+
+	_delay_ms(3000);
 
 	initializeGrid(player2Grid);
 
@@ -162,6 +176,8 @@ void clearBoat(int boat)
 
 void drawBoat(int boat)
 {
+	shipPlacementError = 0;
+
 	int i;
 	int x = curShipPosX;
 	int y = curShipPosY;
@@ -187,6 +203,11 @@ void drawBoat(int boat)
 		}
 		else
 		{
+			if (shipPlacementError == 0)
+			{
+
+				shipPlacementError = 1;
+			}
 			player1Grid[y][x] = 2;
 		}
 		if (curOrientation == NORTH || curOrientation == SOUTH)
@@ -199,6 +220,14 @@ void drawBoat(int boat)
 			reDrawPlacingCell(x, y);
 			x++;
 		}
+	}
+	if (shipPlacementError == 1)
+	{
+		displayMessageTop("Boats are overlapping!");
+	}
+	else
+	{
+		displayMessageTop("");
 	}
 }
 
@@ -717,6 +746,25 @@ int placementSwitchCheck(int state)
 			clearBoat(curPlacingShip);
 			curShipPosX--;
 			drawBoat(curPlacingShip);
+		}
+	}
+
+	if (get_switch_press(_BV(SWC)))
+	{
+		if (shipPlacementError == 0)
+		{
+			if (curPlacingShip == NO_BOATS - 1)
+			{
+				initGame();
+			}
+			else
+			{
+				curPlacingShip++;
+				curShipPosX = 0;
+				curShipPosY = 0;
+				curOrientation = EAST;
+				drawBoat(curPlacingShip);
+			}
 		}
 	}
 
