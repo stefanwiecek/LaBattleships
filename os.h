@@ -18,6 +18,7 @@
 
 #ifndef OS_H
 #define OS_H
+#define __AVR_AT90USB1286__
 
 #include <stdio.h>
 #include <avr/io.h>

@@ -45,7 +45,6 @@ unsigned int USART_Wait_And_Receive(void)
     /* Wait for data to be received */
     while (!(UCSR1A & (1 << RXC1)))
         ;
-
     /* Get and return received data from buffer */
     return UDR1;
 }
