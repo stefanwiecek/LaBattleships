@@ -4,6 +4,7 @@
         "os.h": "c",
         "stdio.h": "c",
         "lcd.h": "c",
-        "usart.h": "c"
+        "usart.h": "c",
+        "font.h": "c"
     }
 }

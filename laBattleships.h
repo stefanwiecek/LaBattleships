@@ -13,6 +13,8 @@
 #define MissColor C_LIGHT_GREY
 #define DestroyedColor RED
 #define CursorColour MAGENTA
+#define ShipColor GREEN
+#define ErrorColor RED
 
 // Drawing info
 #define LineThickness 2
@@ -21,6 +23,8 @@
 #define HIT_MN 120
 #define MISS_MN 121
 #define WIN_MN 122
+
+#define NO_BOATS 3
 
 #define PLAYER 0
 
@@ -34,7 +38,17 @@ enum orientation
     WEST
 };
 
-enum orientation curOrientation;
+enum orientation curOrientation = EAST;
+
+typedef struct boat
+{
+    int length;
+} boat;
+
+boat boats[NO_BOATS] = {
+    {.length = 2},
+    {.length = 3},
+    {.length = 4}};
 
 int position = 0;
 

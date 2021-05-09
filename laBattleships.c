@@ -12,12 +12,12 @@ Developed by
 #include <string.h>
 #include <laBattleships.h>
 #include <graphics.h>
+#include <util/delay.h>
 
 int update_dial(int);
 int collect_delta(int);
-int check_switches(int);
 int show_ram(int);
-void initializeGrid();
+void initializeGrid(int grid[NoRowColDef][NoRowColDef]);
 void updateDisplayCoords();
 void drawFilledRectangle(rectangle r, uint16_t fillCol, uint16_t lineCol);
 void init();
@@ -25,12 +25,14 @@ void add_miss(uint8_t res);
 void add_hit(uint8_t res);
 int getHitOrMissOrWon(uint8_t cellIndex);
 void show_win();
+int gameSwitchCheck(int);
+int placementSwitchCheck(int state);
 
 // This is your starting grid - you wont see this
 // 0 for blank, 1 for boat, 2 for hit
 int player1Grid[NoRowColDef][NoRowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0, 1, 1, 0, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -54,15 +56,17 @@ int player2Grid[NoRowColDef][NoRowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
+int placementSwitchTask;
+int gameSwitchTask;
+
+int curShipPosX = 0;
+int curShipPosY = 0;
+int curPlacingShip = 0;
+
 void main(void)
 {
 	os_init();
-	// Splash screen here
-
 	USART_Init(9600);
-	os_add_task(collect_delta, 500, 1);
-	os_add_task(check_switches, 100, 1);
-
 	init();
 }
 
@@ -73,7 +77,34 @@ void init()
 	gridStartLeftPos = (LCDHEIGHT - gridTotalWidth) / 2;
 	gridStartTopPos = (LCDWIDTH - gridTotalWidth);
 
-	initializeGrid();
+	os_add_task(collect_delta, 500, 1);
+
+	display_string_xy("LaBattleships", (LCDHEIGHT / 2) - 35, (LCDWIDTH / 2) - 2.5); // Splash screen
+
+	_delay_ms(500);
+
+	initShipPlacement();
+
+	sei();
+	for (;;)
+	{
+	}
+}
+
+void initShipPlacement()
+{
+	clear_screen();
+
+	initializePlacingGrid(player1Grid);
+	drawBoat(0);
+	placementSwitchTask = os_add_task(placementSwitchCheck, 100, 1);
+}
+
+void initGame()
+{
+	os_remove_task(placementSwitchTask);
+
+	initializeGrid(player2Grid);
 
 	if (PLAYER == 0)
 	{
@@ -84,27 +115,108 @@ void init()
 		display_string_xy("Play 1", 5, 35);
 	}
 
-	sei();
-	for (;;)
+	placementSwitchTask = os_add_task(gameSwitchCheck, 100, 1);
+}
+
+void clearBoat(int boat)
+{
+	int i;
+	int x = curShipPosX;
+	int y = curShipPosY;
+
+	// <-
+	if (curOrientation == WEST)
 	{
+		x = x - (boats[boat].length - 1);
+	}
+
+	// ^
+	// |
+	if (curOrientation == NORTH)
+	{
+		y = y - (boats[boat].length - 1);
+	}
+
+	for (i = 0; i < boats[boat].length; i++)
+	{
+		if (player1Grid[y][x] == 1)
+		{
+			player1Grid[y][x] = 0;
+		}
+		else if (player1Grid[y][x] == 2)
+		{
+			player1Grid[y][x] = 1;
+		}
+		if (curOrientation == NORTH || curOrientation == SOUTH)
+		{
+			reDrawPlacingCell(x, y);
+			y++;
+		}
+		else if (curOrientation == EAST || curOrientation == WEST)
+		{
+			reDrawPlacingCell(x, y);
+			x++;
+		}
+	}
+}
+
+void drawBoat(int boat)
+{
+	int i;
+	int x = curShipPosX;
+	int y = curShipPosY;
+
+	// <-
+	if (curOrientation == WEST)
+	{
+		x = x - (boats[boat].length - 1);
+	}
+
+	// ^
+	// |
+	if (curOrientation == NORTH)
+	{
+		y = y - (boats[boat].length - 1);
+	}
+
+	for (i = 0; i < boats[boat].length; i++)
+	{
+		if (player1Grid[y][x] == 0)
+		{
+			player1Grid[y][x] = 1;
+		}
+		else
+		{
+			player1Grid[y][x] = 2;
+		}
+		if (curOrientation == NORTH || curOrientation == SOUTH)
+		{
+			reDrawPlacingCell(x, y);
+			y++;
+		}
+		else if (curOrientation == EAST || curOrientation == WEST)
+		{
+			reDrawPlacingCell(x, y);
+			x++;
+		}
 	}
 }
 
 void decrementOrientation()
 {
-	if (curOrientation == NORTH)
+	if (curOrientation == NORTH && curShipPosX - boats[curPlacingShip].length + 1 >= 0)
 	{
 		curOrientation = WEST;
 	}
-	else if (curOrientation == EAST)
+	else if (curOrientation == EAST && curShipPosY - boats[curPlacingShip].length + 1 >= 0)
 	{
 		curOrientation = NORTH;
 	}
-	else if (curOrientation == SOUTH)
+	else if (curOrientation == SOUTH && curShipPosX < NoRowColDef - boats[curPlacingShip].length + 1)
 	{
 		curOrientation = EAST;
 	}
-	else if (curOrientation == WEST)
+	else if (curOrientation == WEST && curShipPosY < NoRowColDef - boats[curPlacingShip].length + 1)
 	{
 		curOrientation = SOUTH;
 	}
@@ -113,19 +225,19 @@ void decrementOrientation()
 
 void incrementOrientation()
 {
-	if (curOrientation == NORTH)
+	if (curOrientation == NORTH && curShipPosX < NoRowColDef - boats[curPlacingShip].length + 1)
 	{
 		curOrientation = EAST;
 	}
-	else if (curOrientation == EAST)
+	else if (curOrientation == EAST && curShipPosY < NoRowColDef - boats[curPlacingShip].length + 1)
 	{
 		curOrientation = SOUTH;
 	}
-	else if (curOrientation == SOUTH)
+	else if (curOrientation == SOUTH && curShipPosX - boats[curPlacingShip].length + 1 >= 0)
 	{
 		curOrientation = WEST;
 	}
-	else if (curOrientation == WEST)
+	else if (curOrientation == WEST && curShipPosY - boats[curPlacingShip].length + 1 >= 0)
 	{
 		curOrientation = NORTH;
 	}
@@ -159,7 +271,47 @@ void updateDisplayCoords()
 	}
 }
 
-void initializeGrid()
+void initializePlacingGrid(int grid[NoRowColDef][NoRowColDef])
+{
+	clear_screen();
+	updateDisplayCoords();
+	int left = gridStartLeftPos;
+	int right = gridStartLeftPos + cellWidth;
+	int top = gridStartTopPos;
+	int bottom = gridStartTopPos + cellHeight;
+	int i, j = 0;
+	for (i = 0; i < NoRowCols; i++)
+	{
+		top = gridStartTopPos;
+		bottom = gridStartTopPos + cellHeight;
+		for (j = 0; j < NoRowCols; j++)
+		{
+			rectangle r = {left, right, top, bottom};
+			// uint16_t outline = GridLineColor;
+
+			// 0 for blank, 1 for ship placed, 2 for ship overlapping so error
+			if (grid[j][i] == 0)
+			{
+				drawFilledRectangle(r, BackgroundColor, GridLineColor);
+			}
+			else if (grid[j][i] == 1)
+			{
+				drawFilledRectangle(r, ShipColor, GridLineColor);
+			}
+			else if (grid[j][i] == 2)
+			{
+				drawFilledRectangle(r, ErrorColor, GridLineColor);
+			}
+
+			top += cellHeight;
+			bottom += cellHeight;
+		}
+		left += cellWidth;
+		right += cellWidth;
+	}
+}
+
+void initializeGrid(int grid[NoRowColDef][NoRowColDef])
 {
 	clear_screen();
 	updateDisplayCoords();
@@ -183,15 +335,15 @@ void initializeGrid()
 			}
 
 			// 0 for blank, 1 for ship not hit, 2 for ship hit
-			if (player2Grid[j][i] == 0)
+			if (grid[j][i] == 0)
 			{
 				drawFilledRectangle(r, BackgroundColor, outline);
 			}
-			else if (player2Grid[j][i] == 1)
+			else if (grid[j][i] == 1)
 			{
 				drawFilledRectangle(r, MissColor, outline);
 			}
-			else if (player2Grid[j][i] == 2)
+			else if (grid[j][i] == 2)
 			{
 				drawFilledRectangle(r, DestroyedColor, outline);
 			}
@@ -201,6 +353,31 @@ void initializeGrid()
 		}
 		left += cellWidth;
 		right += cellWidth;
+	}
+}
+
+void reDrawPlacingCell(int x, int y)
+{
+	int left = gridStartLeftPos + (x * cellWidth);
+	int right = gridStartLeftPos + (x * cellWidth) + cellWidth;
+	int top = gridStartTopPos + (y * cellHeight);
+	int bottom = gridStartTopPos + (y * cellHeight) + cellHeight;
+	rectangle r = {left, right, top, bottom};
+
+	// uint16_t outline = GridLineColor;
+
+	// 0 for blank, 1 for ship placed, 2 for ship overlapping so error
+	if (player1Grid[y][x] == 0)
+	{
+		drawFilledRectangle(r, BackgroundColor, GridLineColor);
+	}
+	else if (player1Grid[y][x] == 1)
+	{
+		drawFilledRectangle(r, ShipColor, GridLineColor);
+	}
+	else if (player1Grid[y][x] == 2)
+	{
+		drawFilledRectangle(r, ErrorColor, GridLineColor);
 	}
 }
 
@@ -305,7 +482,7 @@ uint8_t getValueAtCoords(uint8_t x, uint8_t y)
 	return player2Grid[y][x];
 }
 
-int check_switches(int state)
+int gameSwitchCheck(int state)
 {
 	if (curPlayer == 0)
 	{
@@ -443,18 +620,6 @@ int check_switches(int state)
 		// {
 		// 	display_string("[R] North\n");
 		// }
-
-		int8_t tempPos = os_enc_delta();
-		if (tempPos > encoderPosition)
-		{
-			encoderPosition = os_enc_delta();
-			incrementOrientation();
-		}
-		else if (tempPos < encoderPosition)
-		{
-			encoderPosition = os_enc_delta();
-			decrementOrientation();
-		}
 	}
 	else if (curPlayer == 1)
 	{
@@ -486,5 +651,90 @@ int check_switches(int state)
 
 		// Reply whether hit or miss or won
 	}
+	return state;
+}
+
+int placementSwitchCheck(int state)
+{
+	if (get_switch_press(_BV(SWN)))
+	{
+		if (curShipPosY > 0 && curOrientation != North)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosY--;
+			drawBoat(curPlacingShip);
+		}
+		else if (curShipPosY - boats[curPlacingShip].length + 1 > 0)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosY--;
+			drawBoat(curPlacingShip);
+		}
+	}
+
+	if (get_switch_press(_BV(SWE)))
+	{
+		if (curShipPosX < NoRowColDef - 1 && curOrientation != EAST)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosX++;
+			drawBoat(curPlacingShip);
+		}
+		else if (curShipPosX + boats[curPlacingShip].length - 1 < NoRowColDef - 1)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosX++;
+			drawBoat(curPlacingShip);
+		}
+	}
+
+	if (get_switch_press(_BV(SWS)))
+	{
+		if (curShipPosY < NoRowColDef - 1 && curOrientation != SOUTH)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosY++;
+			drawBoat(curPlacingShip);
+		}
+		else if (curShipPosY + boats[curPlacingShip].length - 1 < NoRowColDef - 1)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosY++;
+			drawBoat(curPlacingShip);
+		}
+	}
+
+	if (get_switch_press(_BV(SWW)))
+	{
+		if (curShipPosX > 0 && curOrientation != WEST)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosX--;
+			drawBoat(curPlacingShip);
+		}
+		else if (curShipPosX - boats[curPlacingShip].length + 1 > 0)
+		{
+			clearBoat(curPlacingShip);
+			curShipPosX--;
+			drawBoat(curPlacingShip);
+		}
+	}
+
+	int8_t tempPos = os_enc_delta();
+	if (tempPos > encoderPosition)
+	{
+		encoderPosition = os_enc_delta();
+		clearBoat(curPlacingShip);
+		incrementOrientation();
+		drawBoat(curPlacingShip);
+	}
+	else if (tempPos < encoderPosition)
+	{
+		encoderPosition = os_enc_delta();
+		clearBoat(curPlacingShip);
+		decrementOrientation();
+		drawBoat(curPlacingShip);
+	}
+
 	return state;
 }
