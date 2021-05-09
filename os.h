@@ -25,14 +25,10 @@
 #include "lcd.h"
 #include "rios.h"
 #include "ruota.h"
-#include "ff.h"
 
-
-
-#define LED_ON      PORTB |=  _BV(PB7)
-#define LED_OFF     PORTB &= ~_BV(PB7)
-#define LED_TOGGLE  PINB  |=  _BV(PB7)
-
+#define LED_ON PORTB |= _BV(PINB7)
+#define LED_OFF PORTB &= ~_BV(PINB7)
+#define LED_TOGGLE PINB |= _BV(PINB7)
 
 void os_init(void);
 

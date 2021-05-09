@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*html": "html",
+        "os.h": "c",
+        "stdio.h": "c",
+        "lcd.h": "c"
+    }
+}

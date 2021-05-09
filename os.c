@@ -18,8 +18,8 @@ void os_init(void) {
     CLKPR = 0;
 
     DDRB  |=  _BV(PB7);  	 /* LED as output */
-
-    init_debug_uart1();
+    LED_OFF;
+    //init_debug_uart1();
     init_lcd();
     os_init_scheduler();
     os_init_ruota();
