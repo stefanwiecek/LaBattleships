@@ -28,7 +28,7 @@ void show_win();
 int gameSwitchCheck(int);
 int placementSwitchCheck(int state);
 
-// This is your starting grid - you wont see this
+// This is your starting grid - you won't see this
 // 0 for blank, 1 for boat, 2 for hit
 int player1Grid[NoRowColDef][NoRowColDef] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -499,7 +499,10 @@ int getHitOrMissOrWon(uint8_t cellIndex)
 	if (won == 1)
 	{
 		clear_screen();
-		displayMessageTop("You lost");
+		rectangle r = {0, LCDHEIGHT, 0, LCDWIDTH};
+		drawFilledRectangle(r , RED, RED);
+		// height = (number of chars * 5) / 2
+		display_string_xy("you lost", (LCDHEIGHT / 2) - 20, (LCDWIDTH / 2) - 2.5);
 		return WIN_MN;
 	}
 	if (player1Grid[y][x] == 1)
@@ -602,7 +605,7 @@ int gameSwitchCheck(int state)
 				{
 					// display_string("Got a hit message");
 					// display_string("GOT HIT");
-					displayMessageBottom("Got hit!");
+					displayMessageBottom("You hit!");
 					add_hit(res);
 					curPlayer = 1;
 					waitForMsg = 0;
@@ -611,7 +614,7 @@ int gameSwitchCheck(int state)
 				{
 					// display_string("Got a miss message");
 					// display_string("GOT MISS");
-					displayMessageBottom("Got miss!");
+					displayMessageBottom("You missed!");
 					add_miss(res);
 					curPlayer = 1;
 					waitForMsg = 0;

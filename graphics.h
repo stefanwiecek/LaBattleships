@@ -20,7 +20,10 @@ void show_win()
     // play again?
 
     clear_screen();
-    displayMessageTop("You won");
+    rectangle r = {0, LCDHEIGHT, 0, LCDWIDTH};
+    drawFilledRectangle(r, GREEN, GREEN);
+    // height = (number of chars * 5) / 2
+	display_string_xy("you won", (LCDHEIGHT / 2) - 17.5, (LCDWIDTH / 2) - 2.5);
 }
 
 void drawFilledRectangle(rectangle r, uint16_t fillCol, uint16_t lineCol)
