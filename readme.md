@@ -32,3 +32,8 @@ The devices need to communicate and they do so via [USART](https://en.wikipedia.
 
 - [Will Kelly](https://github.com/wkelly1)
 - [Stefan Wiecek](https://github.com/stefanwiecek)
+
+## Credits
+
+- Peter Dannegger’s - Rotary encoder and switch debouncing
+- Steve Gunn’s - Display driver
